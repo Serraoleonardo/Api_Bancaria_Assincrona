@@ -1,7 +1,7 @@
 import secrets
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -67,11 +67,16 @@ async def registrar_transacao(
 @router.get("/{conta_id}/extrato", response_model=Extrato)
 async def extrato(
     conta_id: int,
+    tipo: TipoTransacao | None = Query(None, description="Filtra por depósito ou saque"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     usuario: Usuario = Depends(usuario_atual),
     session: AsyncSession = Depends(get_session),
 ):
     conta = await _conta_do_usuario(conta_id, usuario, session)
-    result = await session.scalars(
-        select(Transacao).where(Transacao.conta_id == conta.id).order_by(Transacao.realizada_em)
-    )
+    consulta = select(Transacao).where(Transacao.conta_id == conta.id)
+    if tipo is not None:
+        consulta = consulta.where(Transacao.tipo == tipo)
+    consulta = consulta.order_by(Transacao.realizada_em, Transacao.id).limit(limit).offset(offset)
+    result = await session.scalars(consulta)
     return Extrato(conta=ContaOut.model_validate(conta), transacoes=result.all())
