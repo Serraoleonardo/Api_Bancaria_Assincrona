@@ -1,5 +1,7 @@
 # 🏦 API Bancária Assíncrona
 
+[![Testes](https://github.com/Serraoleonardo/Api_Bancaria_Assincrona/actions/workflows/tests.yml/badge.svg)](https://github.com/Serraoleonardo/Api_Bancaria_Assincrona/actions/workflows/tests.yml)
+
 API RESTful **assíncrona** para operações bancárias — depósitos, saques e extrato — com autenticação **JWT**. Projeto desenvolvido para o desafio de curso da [DIO](https://www.dio.me/).
 
 ## ✨ Funcionalidades
@@ -8,7 +10,7 @@ API RESTful **assíncrona** para operações bancárias — depósitos, saques e
 - **Autenticação JWT** protegendo todas as rotas de conta
 - **Abertura de contas** correntes vinculadas ao usuário
 - **Transações** de depósito e saque
-- **Extrato** com todas as transações e o saldo após cada uma
+- **Extrato** com saldo após cada transação, filtro por tipo e paginação
 - **Regras de negócio**
   - Não aceita valores zerados ou negativos
   - Não permite saque sem saldo suficiente
@@ -24,6 +26,8 @@ API RESTful **assíncrona** para operações bancárias — depósitos, saques e
 | Validação | Pydantic v2 |
 | Autenticação | JWT (PyJWT) + OAuth2 Password Flow |
 | Testes | Pytest + pytest-asyncio + HTTPX |
+| CI | GitHub Actions |
+| Container | Docker |
 
 ## 📁 Estrutura
 
@@ -56,6 +60,13 @@ uvicorn app.main:app --reload
 
 Acesse a documentação interativa em **http://localhost:8000/docs**.
 
+### Com Docker
+
+```bash
+docker build -t api-bancaria .
+docker run -p 8000:8000 api-bancaria
+```
+
 ## 📌 Endpoints
 
 | Método | Rota | Descrição | Auth |
@@ -65,7 +76,7 @@ Acesse a documentação interativa em **http://localhost:8000/docs**.
 | POST | `/contas` | Abre uma nova conta | ✅ |
 | GET | `/contas` | Lista as contas do usuário | ✅ |
 | POST | `/contas/{id}/transacoes` | Registra depósito ou saque | ✅ |
-| GET | `/contas/{id}/extrato` | Exibe saldo e histórico | ✅ |
+| GET | `/contas/{id}/extrato` | Exibe saldo e histórico (`?tipo=`, `?limit=`, `?offset=`) | ✅ |
 
 ### Exemplo de transação
 
@@ -83,7 +94,14 @@ POST /contas/1/transacoes
 pytest
 ```
 
-Cobrem login inválido, rota sem token, depósito/saque/extrato, saque sem saldo, valores inválidos e CPF duplicado.
+Os testes rodam automaticamente a cada push via GitHub Actions e cobrem:
+
+- Login inválido, rota sem token e token falso
+- Depósito, saque e extrato (inclusive saque do saldo exato)
+- Saque sem saldo e valores zerados/negativos
+- CPF duplicado ou inválido
+- Isolamento: um usuário não acessa a conta de outro
+- Filtro e paginação do extrato
 
 ## 👤 Autor
 
